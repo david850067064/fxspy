@@ -866,12 +866,10 @@ package com.flexspy.imp {
 	    }
 	    
 	    public override function move(x:Number, y:Number):void {
-			trace("Setting x,y to " + x + "," + y);
 	    	super.move(x, y);
 	    }
 	    
 	    public override function set x(value: Number): void {
-			trace("Setting x to " + x);
 			super.x = value;    	
 	    }
 	
