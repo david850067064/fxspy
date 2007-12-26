@@ -54,7 +54,6 @@ package com.flexspy.imp {
 			_uri = v;
 		}
 		
-	    [Bindable("valueChange")]
 		public function get displayValue(): String {
 			if (type == "Array") {
 				return getArrayDisplayValue(value as Array);
@@ -63,11 +62,11 @@ package com.flexspy.imp {
 			}
 		}
 
-	    [Bindable]
 		public function get value(): * {
 			return _value;
 		}
 		
+	    [Bindable("valueChange")]
 		public function set value(v: *): void {
 			if (v != _value) {
 				_value = v;
@@ -75,11 +74,11 @@ package com.flexspy.imp {
 			}
 		}
 		
-		[Bindable]
 		public function get editable(): Boolean {
 			return _editable;
 		}
 		
+		[Bindable("editableChange")]
 		public function set editable(v: Boolean): void {
 			if (v != _editable) {
 				_editable = v;

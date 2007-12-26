@@ -1,5 +1,5 @@
 /**
- * FlexSpy 1.1
+ * FlexSpy 1.2
  * 
  * <p>Code released under WTFPL [http://sam.zoy.org/wtfpl/]</p>
  * @author Arnaud Pichery [http://coderpeon.ovh.org]

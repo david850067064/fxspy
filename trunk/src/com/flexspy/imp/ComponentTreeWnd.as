@@ -48,10 +48,10 @@ package com.flexspy.imp {
 		private var _componentTree: Tree;
 		
 		// UI component displaying the properties of a component.
-		private var _componentProperties: ComponentProperties;
+		private var _componentProperties: ComponentPropertiesEditor;
 
 		// UI component displaying the styles of a component.
-		private var _componentStyles: ComponentStyles;
+		private var _componentStyles: ComponentStylesEditor;
 		
 		// Root component of the tree
 		private var _root: DisplayObject;
@@ -108,12 +108,12 @@ package com.flexspy.imp {
 			_rightTab.percentHeight = 100.0;
 			vbox.addChild(_rightTab);
 			
-			_componentProperties = new ComponentProperties();
+			_componentProperties = new ComponentPropertiesEditor();
 			_componentProperties.percentWidth = 100.0;
 			_componentProperties.percentHeight = 100.0;
 			_rightTab.addChild(_componentProperties);
 
-			_componentStyles = new ComponentStyles();
+			_componentStyles = new ComponentStylesEditor();
 			_componentStyles.percentWidth = 100.0;
 			_componentStyles.percentHeight = 100.0;
 			_rightTab.addChild(_componentStyles);
