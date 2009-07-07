@@ -8,31 +8,23 @@ package com.flexspy.imp {
 
 	import flash.display.DisplayObject;
 	import flash.events.Event;
-	import flash.events.KeyboardEvent;
 	import flash.events.MouseEvent;
 	
 	import mx.collections.ArrayCollection;
-	import mx.collections.Sort;
-	import mx.collections.SortField;
 	import mx.containers.HDividedBox;
 	import mx.containers.TabNavigator;
-	import mx.containers.TitleWindow;
-	import mx.controls.Alert;
+	import mx.containers.VBox;
 	import mx.controls.Button;
+	import mx.controls.ComboBox;
 	import mx.controls.Spacer;
 	import mx.controls.Tree;
 	import mx.core.Application;
-	import mx.core.Container;
+	import mx.core.IChildList;
 	import mx.core.UIComponent;
 	import mx.effects.Effect;
 	import mx.effects.Glow;
-	import mx.effects.Zoom;
-	import mx.effects.effectClasses.GlowInstance;
-	import mx.events.CloseEvent;
-	import mx.events.CollectionEvent;
-	import mx.events.FlexEvent;
+	import mx.events.DropdownEvent;
 	import mx.events.ListEvent;
-	import mx.managers.FocusManager;
 	import mx.managers.PopUpManager;
 
 	/**
@@ -52,6 +44,9 @@ package com.flexspy.imp {
 
 		// UI component displaying the styles of a component.
 		private var _componentStyles: ComponentStylesEditor;
+		
+		// UI component displaying the main Windows list.
+		private var _componentTreeSelection : ComboBox;
 		
 		// Root component of the tree
 		private var _root: DisplayObject;
@@ -95,12 +90,23 @@ package com.flexspy.imp {
 			vbox.percentWidth = 100.0;
 			vbox.percentHeight = 100.0;
 			
+			var treeBox:mx.containers.VBox = new mx.containers.VBox();
+			_componentTreeSelection = new ComboBox();
+			_componentTreeSelection.addEventListener(DropdownEvent.CLOSE, onTreeSelectionItemClicked);
+			_componentTreeSelection.labelField = "name";
+			treeBox.addChild(_componentTreeSelection);
+			
 			_componentTree = new Tree();
-			_componentTree.percentWidth = 50.0;
+			_componentTree.percentWidth = 100.0;
 			_componentTree.percentHeight = 100.0;
 			_componentTree.addEventListener(ListEvent.CHANGE, onItemSelected);
 			_componentTree.iconFunction = getTreeNodeIcon;
-			vbox.addChild(_componentTree);
+			treeBox.addChild(_componentTree);
+			
+			treeBox.percentHeight=100.0;
+			treeBox.percentWidth=50.0;
+			
+			vbox.addChild(treeBox);
 			
 			var _rightTab: TabNavigator = new TabNavigator();
 			_rightTab.historyManagementEnabled = false;
@@ -171,18 +177,19 @@ package com.flexspy.imp {
 				// Modeless or modal window displayed, update the root component and refresh.
 				if (_instance._root != root) {
 					_instance._root = root;
-					_instance.initWindow();
 				}
 				if (!_instance.visible) {
-					_instance.visible = true;
 					PopUpManager.addPopUp(_instance, DisplayObject(Application.application), _instance._modal);
+					_instance.visible = true;
 				}
+				_instance.initWindow();
 			}
 		}
 
 		private function closeWindow(event: Event = null): void {
 			PopUpManager.removePopUp(this);
 			_instance.visible = false;
+			focusManager.deactivate();
 		}
 		
 		private function onCreationComplete(event: Event): void {
@@ -261,13 +268,14 @@ package com.flexspy.imp {
 			}
 		}
 		
-		/**
-		 * Fill-in the component tree with the root component.
+		/** Fill-in the component tree with the root component.
 		 * 
 		 * This method is called the first time the window is created, 
 		 * and when users click the "refresh" button.
-		 */
-		private function initWindow(): void {
+		 * 
+		 * @param refreshCombo boolean : true : also refresh the combo selecting the root tree.
+		 * */
+		private function initWindow(refreshCombo:Boolean = true): void {
 			// Compute the component tree and display it
 			var rootItem: IComponentTreeItem = new ComponentTreeItem(_root, null);
 			var treeNodes: ArrayCollection = new ArrayCollection();
@@ -275,8 +283,48 @@ package com.flexspy.imp {
 			_componentTree.dataProvider = treeNodes;
 			_componentTree.validateNow();
 			_componentTree.expandItem(rootItem, true);
+			
+			// Compute the combo to select the tree to show
+			if(refreshCombo){			
+				_componentTreeSelection.dataProvider = fillTreeSelection();
+			}
+			
 			_componentProperties.showComponentProperties(null);
 			_componentStyles.showComponentStyles(null);
+		}
+		
+		private function onTreeSelectionItemClicked(event:DropdownEvent): void {
+			var cb: ComboBox = ComboBox(event.currentTarget);
+			_root = DisplayObject(cb.selectedItem);
+			initWindow(false);
+		}
+		
+		private function fillTreeSelection(): ArrayCollection {
+			var windowsArray:ArrayCollection = new ArrayCollection();
+			listWindows(windowsArray,systemManager.popUpChildren);
+			listWindows(windowsArray,systemManager);
+			return windowsArray;
+		}
+		
+		private function listWindows(windowsArray:ArrayCollection, list:IChildList): void{
+			for (var i:int=0;i<list.numChildren;i++) {
+				var currentWindow:DisplayObject = list.getChildAt(i);
+				if (currentWindow == _instance) {
+					break;
+				}
+				var component:UIComponent = currentWindow as UIComponent;
+				if (component == null) {
+					break;
+				}
+				component = component.owner as UIComponent;
+				while(component != null){
+					if(component == _instance){
+						break;
+					}
+					component = component.owner as UIComponent;
+				}
+				windowsArray.addItem(currentWindow);
+			}
 		}
 		
         private function onItemSelected(event: Event): void {
