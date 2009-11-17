@@ -10,6 +10,9 @@ package pm
 		[Bindable]
 		public var color : uint;
 		
+		[Bindable]
+		public var showClose : Boolean;
+		
 		
 		public function TestViewPM( name : String, color : uint )
 		{
