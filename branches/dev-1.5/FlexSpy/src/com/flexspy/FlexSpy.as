@@ -16,14 +16,13 @@ package com.flexspy {
 	
 	import mx.core.Application;
 	import mx.core.UIComponent;
-	import com.flexspy.FlexSpy_Internal;
 	
 	/**
 	 * Entry point to use FlexSpy.
 	 */
 	public class FlexSpy {
 		private static const dispatcher : EventDispatcher = new EventDispatcher();
-		
+		public static var drillIntoComponentWhenSelectingFromMenu : Boolean = true;
 		/**
 		 * Displays the tree of the specified DisplayObject (its children, the children of its children, etc.)
 		 * 
