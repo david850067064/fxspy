@@ -34,7 +34,9 @@
                        click="Log.instance.addLine(model,'I have logged this comp ' + logPMCount++ + ' times')"/>
 
         </mx:HBox>
-
+        <mx:Button label="close"
+                   click="dispatchEvent(new Event('close'))"
+                   visible="{model.showClose}"/>
     </mx:VBox>
 
 

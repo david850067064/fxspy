@@ -14,10 +14,8 @@ package com.flexspy.imp {
 	import mx.collections.ArrayCollection;
 	import mx.collections.Sort;
 	import mx.collections.SortField;
-	import mx.containers.HBox;
 	import mx.containers.VBox;
 	import mx.controls.DataGrid;
-	import mx.controls.Text;
 	import mx.controls.dataGridClasses.DataGridColumn;
 	import mx.core.ClassFactory;
 	import mx.events.CollectionEvent;
@@ -245,12 +243,17 @@ package com.flexspy.imp {
         }
 
         private static function getObjectPropertyValue(object: Object, propertyName: String, namespaceUri: String): * {
-        	if (namespaceUri == null || namespaceUri == "") {
-        		return object[propertyName];
-        	} else {
-        		var ns: Namespace = new Namespace(namespaceUri);
-        		return object.ns::[propertyName];
-        	}
+			try{
+	        	if (namespaceUri == null || namespaceUri == "") {
+					
+	        		return object[propertyName];
+	        	} else {
+	        		var ns: Namespace = new Namespace(namespaceUri);
+	        		return object.ns::[propertyName];
+	        	}
+			} catch ( e : Error ) {
+				return "Error retrieving";
+			}
         }
 	}
 }

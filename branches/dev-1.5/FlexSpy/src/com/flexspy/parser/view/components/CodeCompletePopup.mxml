@@ -109,9 +109,11 @@
 	</mx:Script>
 	
 	<mx:TextArea id="debug" width="100%" height="50%" 
+				 visible="false"
+				 includeInLayout="false"
 			text="{ modifier.codeCompleter.debugText }" 
 			change="{ debug.verticalScrollPosition = debug.maxVerticalScrollPosition }" />
-	<mx:List id="matchList" width="100%" height="50%" 
+	<mx:List id="matchList" width="100%" height="100%" 
 			doubleClickEnabled="true"
 			doubleClick="{ doSelection() }"
 			keyDown="handleKeyDown( event )"

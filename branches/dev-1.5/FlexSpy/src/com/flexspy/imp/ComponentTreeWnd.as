@@ -168,6 +168,7 @@ package com.flexspy.imp {
 			_backUp = new ComboBox();
 			_backUp.addEventListener(ListEvent.CHANGE, handleBackUpChange);
 			_backUp.labelField = "name";
+			_backUp.rowCount = 20;
 			hbox.addChild(_backUp);
 			var closeAll : Button = new Button();
 			closeAll.label="-";
