@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="100%" height="100%"
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" width="100%" height="100%"
 		   label="Log"
 		   creationComplete="onCreationComplete()">
 <mx:Script>
@@ -13,17 +13,36 @@
 			FlexSpy.addEventListener(FlexSpyEvent.PROPERTY_SELECTED, handleFlexSpyEvent);
 			FlexSpy.addEventListener(FlexSpyEvent.VIEW_ITEM_SELECTED, handleFlexSpyEvent);
 		}
+		private var currentObject : Object;
+		[Bindable]
+		private var isFiltered : Boolean;
 		
 		private function handleFlexSpyEvent(event : FlexSpyEvent) : void{
-			text.htmlText += event.type + "<br/>";
 			if ( event.propertyName != null){
-				text.htmlText += event.propertyName + " : " + event.propertyValue + "<br/>";
+				Log.instance.addLine(event.propertyName, event.propertyValue);
 			}
 			if ( event.viewItem != null){
-				text.htmlText += event.viewItem.name+ " : " + event.viewItem + "<br/>";
+				Log.instance.addLine(event.viewItem, "FlexSpy: " + event.type);
+				currentObject = event.viewItem;
+				if ( isFiltered){
+					Log.instance.filterSource(currentObject);
+				}
 			}
+		}
+		private function toggleFilter() : void{
+			isFiltered = !isFiltered;
+			Log.instance.filterSource(isFiltered ? currentObject : null);
 		}
 	]]>
 </mx:Script>
-	<mx:TextArea id="text" width="90%" height="100%" color="black" />
-</mx:Canvas>
+	<mx:HBox>
+		<mx:Button label="{isFiltered ? 'all' : 'filter'}" click="toggleFilter()"/>
+		<mx:Button label="clear" click="{Log.instance.items.removeAll()}" />
+	</mx:HBox>
+	<mx:DataGrid dataProvider="{Log.instance.items}" width="100%" height="100%" >
+		<mx:columns>
+			<mx:DataGridColumn dataField="name" headerText="Item" width="200"/>
+			<mx:DataGridColumn dataField="text" headerText="Message" width="600"/>
+		</mx:columns>
+		</mx:DataGrid>
+</mx:VBox>
