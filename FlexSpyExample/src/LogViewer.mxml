@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="100%" height="100%"
+		   label="Log"
+		   creationComplete="onCreationComplete()">
+<mx:Script>
+	<![CDATA[
+		import com.flexspy.FlexSpy;
+		import com.flexspy.event.FlexSpyEvent;
+		private function onCreationComplete() : void{
+			//register for flexspy events
+			FlexSpy.addEventListener(FlexSpyEvent.HIDE, handleFlexSpyEvent);
+			FlexSpy.addEventListener(FlexSpyEvent.SHOW, handleFlexSpyEvent);
+			FlexSpy.addEventListener(FlexSpyEvent.PROPERTY_SELECTED, handleFlexSpyEvent);
+			FlexSpy.addEventListener(FlexSpyEvent.VIEW_ITEM_SELECTED, handleFlexSpyEvent);
+		}
+		
+		private function handleFlexSpyEvent(event : FlexSpyEvent) : void{
+			text.htmlText += event.type + "<br/>";
+			if ( event.propertyName != null){
+				text.htmlText += event.propertyName + " : " + event.propertyValue + "<br/>";
+			}
+			if ( event.viewItem != null){
+				text.htmlText += event.viewItem.name+ " : " + event.viewItem + "<br/>";
+			}
+		}
+	]]>
+</mx:Script>
+	<mx:TextArea id="text" width="90%" height="100%" color="black" />
+</mx:Canvas>
