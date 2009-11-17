@@ -1,27 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
-<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" 
-	width="300" height="50"
-	backgroundColor="{ model.color }"
-	>
-	<mx:Script>
-		<![CDATA[
-			import pm.TestViewPM;
-			
-			[Bindable] 
-			public var model : TestViewPM;
-			
-		]]>
-	</mx:Script>
-	
-	<mx:VBox
-		width="200"
-		horizontalCenter="0"
-		verticalCenter="0"
-		horizontalAlign="center"		
-	>
-	<mx:Label text="{ model.name }" />
-		<mx:Button label="hi there" click="model.sayHello()"/>
-	</mx:VBox>
-	
-		
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml"
+           width="300"
+           height="100"
+           backgroundColor="{ model.color }"
+           horizontalScrollPolicy="off"
+           verticalScrollPolicy="off">
+    <mx:Script>
+        <![CDATA[
+            import pm.TestViewPM;
+
+            [Bindable]
+            public var model:TestViewPM;
+            private var logCount:int;
+            private var logPMCount:int;
+        ]]>
+    </mx:Script>
+
+    <mx:VBox width="300"
+             horizontalCenter="0"
+             verticalCenter="0"
+             horizontalAlign="center"
+             horizontalScrollPolicy="off"
+             verticalScrollPolicy="off">
+        <mx:Label text="{ model.name }"/>
+            <mx:Button label="hi there"
+                       click="model.sayHello()"/>
+        <mx:HBox horizontalScrollPolicy="off"
+                 verticalScrollPolicy="off">
+
+            <mx:Button label="log view"
+                       click="Log.instance.addLine(this,'I have logged this comp ' + logCount++ + ' times')"/>
+            <mx:Button label="log model"
+                       click="Log.instance.addLine(model,'I have logged this comp ' + logPMCount++ + ' times')"/>
+
+        </mx:HBox>
+
+    </mx:VBox>
+
+
 </mx:Canvas>
