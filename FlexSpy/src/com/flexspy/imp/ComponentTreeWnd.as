@@ -12,24 +12,28 @@ package com.flexspy.imp {
 	import com.flexspy.parser.view.FlexSpyParserModule;
 	
 	import flash.display.DisplayObject;
+	import flash.display.Stage;
 	import flash.events.Event;
+	import flash.events.KeyboardEvent;
 	import flash.events.MouseEvent;
 	import flash.filters.BitmapFilterQuality;
 	import flash.filters.GlowFilter;
+	import flash.ui.Keyboard;
 	
 	import mx.collections.ArrayCollection;
+	import mx.containers.HBox;
 	import mx.containers.HDividedBox;
 	import mx.containers.TabNavigator;
 	import mx.containers.VBox;
 	import mx.controls.Button;
 	import mx.controls.ComboBox;
+	import mx.controls.Label;
+	import mx.controls.Spacer;
 	import mx.controls.Tree;
-	import mx.core.Application;
 	import mx.core.IChildList;
 	import mx.core.UIComponent;
 	import mx.effects.Effect;
 	import mx.effects.Glow;
-	import mx.events.FlexEvent;
 	import mx.events.ListEvent;
 	import mx.managers.PopUpManager;
 	
@@ -67,7 +71,7 @@ package com.flexspy.imp {
 		
 		// Effect used to highlight the selected component
 		private var _highlightComponentEffect: Effect;
-		
+
 		private static var isModalInstance : Boolean = true; 
 
 		private var mainTabs : TabNavigator;
@@ -75,6 +79,8 @@ package com.flexspy.imp {
 		private var createdChildren : Boolean;
 		private var pendingModules : Array = [FlexSpyParserModule]; //of Class (defferred displayObjet)
 		private var _initialSelection: DisplayObject; 
+		
+		private var _backUp : ComboBox; //used to go back up alevel
 		
 	    /**
 	     * This method is not intented to be used. Use <code>show</code> method instead.
@@ -111,31 +117,7 @@ package com.flexspy.imp {
 				mainTabs.addChild(new module() as DisplayObject);
 			}
 			addChild(mainTabs);
-			var cbar: mx.containers.Box = new mx.containers.HBox();
-			cbar.setStyle("horizontalAlign", "right");
-			cbar.percentWidth = 100.0;
-			
-			// Add Find button
-			var findButton: Button = new Button();
-			findButton.label = "Find Component";
-			findButton.setStyle("icon", FindWnd.TARGET_ICON);
-			findButton.addEventListener(MouseEvent.CLICK, onFindButtonClicked);
-			cbar.addChild(findButton);
-			
-			if (!_modal) {
-				// Add refresh button when window is not modal
-				var refreshButton: Button = new Button();
-				refreshButton.label = "Refresh";
-				refreshButton.addEventListener(MouseEvent.CLICK, onRefreshButtonClicked);
-				cbar.addChild(refreshButton);
-			}
-			highlightButton = new Button();
-			highlightButton.label = "highlight";
-			highlightButton.addEventListener( MouseEvent.CLICK, onHighlightClicked );
-			highlightButton.y = 5;
-			highlightButton.x = 160;
-			cbar.addChild( highlightButton );
-			this.addChild(cbar);
+			addChild(createControlBar());
 			createdChildren = true;
 		}
 		
@@ -147,18 +129,16 @@ package com.flexspy.imp {
 			vbox.percentHeight = 100.0;
 			
 			var treeBox:mx.containers.VBox = new mx.containers.VBox();
-			_componentTreeSelection = new ComboBox();
-			_componentTreeSelection.addEventListener(ListEvent.CHANGE, onTreeSelectionItemClicked);
-			_componentTreeSelection.labelField = "name";
-			treeBox.addChild(_componentTreeSelection);
+			
+			treeBox.addChild(createSpyViewHeader());
 			
 			_componentTree = new Tree();
 			_componentTree.percentWidth = 100.0;
 			_componentTree.percentHeight = 100.0;
 			_componentTree.addEventListener(ListEvent.CHANGE, onItemSelected);
 			_componentTree.addEventListener( MouseEvent.CLICK, onClickItem );
+			_componentTree.addEventListener( MouseEvent.DOUBLE_CLICK, onDoubleClickItem );
 			_componentTree.iconFunction = getTreeNodeIcon;
-			_componentTree.addEventListener(FlexEvent.CREATION_COMPLETE, onOk);
 			treeBox.addChild(_componentTree);
 			
 			treeBox.percentHeight=100.0;
@@ -183,11 +163,86 @@ package com.flexspy.imp {
 			_rightTab.addChild(_componentStyles);
 			return vbox;
 		}
-		
-		private function onOk(event: FlexEvent): void {
-			trace("ok");			
+		private function createSpyViewHeader() : UIComponent{
+			var hbox : HBox = new HBox();
+			_backUp = new ComboBox();
+			_backUp.addEventListener(ListEvent.CHANGE, handleBackUpChange);
+			_backUp.labelField = "name";
+			hbox.addChild(_backUp);
+			var closeAll : Button = new Button();
+			closeAll.label="-";
+			closeAll.addEventListener(MouseEvent.CLICK, handleCollapseClick);
+			hbox.addChild(closeAll);
+			var expandAll : Button = new Button();
+			expandAll.label="+";
+			expandAll.addEventListener(MouseEvent.CLICK, handleExpandClick);
+			hbox.addChild(expandAll);
+			return hbox;
 		}
 		
+		private function handleCollapseClick(event : Event) : void{
+			setTreeExpanded(false);
+		}
+
+		private function handleExpandClick(event : Event) : void{
+			setTreeExpanded(true);
+		}
+
+		private function setTreeExpanded(expanded : Boolean) : void{
+			if (_componentTree.dataProvider.length > 0){
+				var rootNode: IComponentTreeItem = IComponentTreeItem(ArrayCollection(_componentTree.dataProvider).getItemAt(0));
+				_componentTree.expandChildrenOf(rootNode, expanded);
+			}
+		}
+		
+		private function handleBackUpChange(event : ListEvent) : void{
+			
+			if ( _backUp.selectedItem != null){
+				_root = DisplayObject(_backUp.selectedItem);
+				initWindow();
+			}
+		}
+		
+		
+		private function createControlBar() : UIComponent{
+			var cbar: mx.containers.Box = new mx.containers.HBox();
+			cbar.setStyle("horizontalAlign", "right");
+			cbar.percentWidth = 100.0;
+			
+			var label : Label = new Label();
+			label.text="Select a Popup:";
+			cbar.addChild(label);
+			
+			_componentTreeSelection = new ComboBox();
+			_componentTreeSelection.addEventListener(ListEvent.CHANGE, onTreeSelectionItemClicked);
+			_componentTreeSelection.labelField = "name";
+			cbar.addChild(_componentTreeSelection);
+			var spacer : Spacer = new Spacer();
+			spacer.percentWidth = 100;
+			cbar.addChild(spacer);
+			
+			// Add Find button
+			var findButton: Button = new Button();
+			findButton.label = "Find Component";
+			findButton.setStyle("icon", FindWnd.TARGET_ICON);
+			findButton.addEventListener(MouseEvent.CLICK, onFindButtonClicked);
+			cbar.addChild(findButton);
+			
+			if (!_modal) {
+				// Add refresh button when window is not modal
+				var refreshButton: Button = new Button();
+				refreshButton.label = "Refresh";
+				refreshButton.addEventListener(MouseEvent.CLICK, onRefreshButtonClicked);
+				cbar.addChild(refreshButton);
+			}
+			highlightButton = new Button();
+			highlightButton.label = "highlight";
+			highlightButton.addEventListener( MouseEvent.CLICK, onHighlightClicked );
+			highlightButton.y = 5;
+			highlightButton.x = 160;
+			cbar.addChild( highlightButton );
+			return cbar;
+		}
 		/**
 		 * Displays the tree of the specified DisplayObject (its children, the children of its children, etc.)
 		 * 
@@ -197,20 +252,21 @@ package com.flexspy.imp {
 		 */
 		public static function show(root: DisplayObject = null, modal: Boolean = true, initialSelection: DisplayObject = null): void {
 			if (root == null) {
-				root = DisplayObject(Application.application);
+				root = DisplayObject(ApplicationUtil.getApplication());
 			}
 			isModalInstance = modal;
 			instance.showInstance(root, initialSelection);
 		}
-		
+
 		private function showInstance(root: DisplayObject, initialSelection: DisplayObject): void {
 			_modal = isModalInstance;
 			if (_root != root) {
 				_root = root;
 			}
 			if (!visible) {
-				PopUpManager.addPopUp(_instance, DisplayObject(Application.application), _modal);
+				PopUpManager.addPopUp(_instance, DisplayObject(ApplicationUtil.getApplication()), _modal);
 				visible = true;
+				showWindow();
 			}
 
 			_initialSelection = initialSelection;
@@ -230,6 +286,15 @@ package com.flexspy.imp {
 			return _instance;
 		}
 		
+		private function handleKey(event : KeyboardEvent) : void{
+			var tabKeys : Array = [ Keyboard.F1, Keyboard.F2, Keyboard.F3, Keyboard.F4, Keyboard.F5, Keyboard.F6, Keyboard.F7, Keyboard.F8, Keyboard.F9, Keyboard.F10];
+			var tabIndex : int = tabKeys.indexOf(event.keyCode);
+			if ( tabIndex >-1 && tabIndex< mainTabs.numChildren){
+				mainTabs.selectedIndex = tabIndex;
+				this.setFocus();
+			}
+		}
+		
 		public function _addModule(module : Class) : void{
 			if (createdChildren){
 				mainTabs.addChild(new module());
@@ -246,6 +311,14 @@ package com.flexspy.imp {
 			PopUpManager.removePopUp(this);
 			_instance.visible = false;
 			focusManager.deactivate();
+			this.removeEventListener(KeyboardEvent.KEY_UP, handleKey);
+		}
+		
+		public function showWindow() : void{
+			this.addEventListener(KeyboardEvent.KEY_UP, handleKey);
+			this.setFocus();
+			var flexSpyEvent : FlexSpyEvent = new FlexSpyEvent(FlexSpyEvent.SHOW,null,_root);
+			FlexSpy.FlexSpy_Internal::dispatchEvent(flexSpyEvent);
 		}
 		
 		private function onCreationComplete(event: Event): void {
@@ -269,10 +342,9 @@ package com.flexspy.imp {
 		}
 		
 		private function onFindButtonClicked(event: Event): void {
-			var findWnd: FindWnd = FindWnd(PopUpManager.createPopUp(DisplayObject(Application.application), FindWnd, false));
+			var findWnd: FindWnd = FindWnd(PopUpManager.createPopUp(DisplayObject(ApplicationUtil.getApplication()), FindWnd, false));
 			findWnd.treeWnd = this;
 			PopUpManager.centerPopUp(findWnd);
-			
 			this.visible = false;
 		}
 		
@@ -328,8 +400,7 @@ package com.flexspy.imp {
 			}
 		}
 		
-		/** 
-		 * Fill-in the component tree with the root component.
+		/** Fill-in the component tree with the root component.
 		 * 
 		 * This method is called the first time the window is created, 
 		 * and when users click the "refresh" button.
@@ -343,12 +414,13 @@ package com.flexspy.imp {
 			treeNodes.addItem(rootItem);
 			_componentTree.dataProvider = treeNodes;
 			_componentTree.validateNow();
-
+			_componentTree.expandItem(rootItem, true);
+			
 			// Compute the combo to select the tree to show
-			if (refreshCombo){			
+			if(refreshCombo){			
 				_componentTreeSelection.dataProvider = fillTreeSelection();
 			}
-
+			_backUp.dataProvider = getBackupItems();
 			if (_initialSelection == null) {
 				_componentTree.expandItem(rootItem, true);
 				_componentProperties.showComponentProperties(null);
@@ -358,9 +430,19 @@ package com.flexspy.imp {
 			}
 		}
 		
+		private function getBackupItems() : ArrayCollection{
+			var items : ArrayCollection = new ArrayCollection();
+			var item : DisplayObject = _root ? _root.parent : null;
+			while (item != null && !(item is Stage)){
+				items.addItem(item);
+				item = item.parent;
+			}
+			return items;
+		}
+		
 		private function onTreeSelectionItemClicked(event:ListEvent): void {
 			_root = DisplayObject(_componentTreeSelection.selectedItem);
-			initWindow(false);
+			initWindow();
 		}
 		
 		private function fillTreeSelection(): ArrayCollection {
@@ -399,21 +481,25 @@ package com.flexspy.imp {
 			this.selectComponent(item);
 		}
 		
-        private function onItemSelected(event: Event): void {
-       		updateSelection(selectedComponent as ComponentTreeItem);
-        }
-        
-        private function updateSelection(item: ComponentTreeItem): void {
+		private function onItemSelected(event: Event): void {
+			updateSelection(selectedComponent as ComponentTreeItem);
+		}
+		
+		private function updateSelection(item: ComponentTreeItem): void {
 			var displayObject: DisplayObject = (item == null) ? null : item.displayObject;
 			_componentProperties.showComponentProperties(displayObject);
 			_componentStyles.showComponentStyles(displayObject);
 			highlightComponent(item);
-        }
+		}
 		
-		private function onClickItem(event : MouseEvent) : void{
-			var item: ComponentTreeItem = selectedComponent as ComponentTreeItem;
-			var displayObject: DisplayObject = (item == null) ? null : item.displayObject;
-			dispatchSelectionEvent(displayObject, event);
+		private function onClickItem( event : MouseEvent ) : void{
+			dispatchSelectionEvent(selectedDisplayObject, event);
+		}
+		
+		private function onDoubleClickItem(event : MouseEvent) : void{
+			_root = ComponentTreeItem(selectedComponent).displayObject;
+			var items : Array = [_root.parent];
+			initWindow();
 		}
 		
 		private function dispatchSelectionEvent(item : DisplayObject, event : Event) : void{
@@ -424,9 +510,14 @@ package com.flexspy.imp {
         private function get selectedComponent(): IComponentTreeItem {
 			return (_componentTree.selectedItem as IComponentTreeItem);
         }
-        
-        private function getItemByDisplayObject(displayObject: DisplayObject): IComponentTreeItem {
-        	var result: IComponentTreeItem;
+		
+		private function get selectedDisplayObject() : DisplayObject{
+			var item: ComponentTreeItem = selectedComponent as ComponentTreeItem;
+			return (item == null) ? null : item.displayObject;
+		}
+		
+		private function getItemByDisplayObject(displayObject: DisplayObject): IComponentTreeItem {
+			var result: IComponentTreeItem;
 			for each (var item: IComponentTreeItem in _componentTree.dataProvider) {
 				result = item.getItemByDisplayObject(displayObject);
 				if (result != null) {
@@ -435,7 +526,7 @@ package com.flexspy.imp {
 			}
 			// Not found
 			return null;
-        }
+		}
         
 		private function getTreeNodeIcon(item:Object):Class{
 		   return IComponentTreeItem(item).icon;
@@ -455,8 +546,7 @@ package com.flexspy.imp {
 		
 		private function onHighlightClicked(event: Event): void {
 			highlightButton.label = highlightButton.label == 'highlight' ? 'unhighlight' : 'highlight';
-			var item: ComponentTreeItem = selectedComponent as ComponentTreeItem;
-			highlighted = (item == null) ? null : (item.displayObject as UIComponent);
+			highlighted = selectedDisplayObject as UIComponent;
 			if ( highlighted )
 			{
 				if ( highlightButton.label != 'highlight' )

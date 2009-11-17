@@ -42,7 +42,7 @@ package com.flexspy {
          	if (item is SystemManager) {
          		break; // Stop at the System manager level.
          	}
-            var contextItem:ContextMenuItem = new ContextMenuItem(depth + getItemLabel(item));
+            var contextItem:ContextMenuItem = new ContextMenuItem(getItemLabel(item));
             contextItemMap[contextItem] = item;
             contextItem.addEventListener(ContextMenuEvent.MENU_ITEM_SELECT, handleContextMenuItemSelect);
 
@@ -83,7 +83,14 @@ package com.flexspy {
             return;
 
 		 var component:InteractiveObject = InteractiveObject(contextItemMap[item]);
-		 var componentRoot: DisplayObject = Utils.getRoot(component);
+		 var componentRoot: DisplayObject = null;
+		 if ( FlexSpy.drillIntoComponentWhenSelectingFromMenu){
+			 componentRoot =component; 
+			 component = null;
+		 } else {
+			 componentRoot = Utils.getRoot(component);
+		 }
+			 
 		 ComponentTreeWnd.show(componentRoot, false, component);
       }
    }

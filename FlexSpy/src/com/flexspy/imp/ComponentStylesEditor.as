@@ -9,47 +9,27 @@ package com.flexspy.imp {
 	import com.flexspy.imp.metadata.FrameworkMetadata;
 	import com.flexspy.imp.metadata.StyleMetadata;
 	
-	import flash.display.DisplayObject;
-	import flash.events.Event;
-	import flash.events.MouseEvent;
-	import flash.geom.Point;
-	import flash.utils.describeType;
-	import flash.utils.getDefinitionByName;
-	import flash.utils.getQualifiedClassName;
-	import flash.utils.getQualifiedSuperclassName;
+	import flash.events.TextEvent;
 	
 	import mx.collections.ArrayCollection;
 	import mx.collections.Sort;
 	import mx.collections.SortField;
-	import mx.containers.Canvas;
 	import mx.containers.HBox;
-	import mx.containers.Panel;
 	import mx.containers.VBox;
-	import mx.controls.Alert;
 	import mx.controls.DataGrid;
 	import mx.controls.Text;
-	import mx.controls.TextInput;
-	import mx.controls.colorPickerClasses.SwatchPanel;
 	import mx.controls.dataGridClasses.DataGridColumn;
 	import mx.core.ClassFactory;
-	import mx.core.EventPriority;
-	import mx.core.UIComponent;
 	import mx.events.CollectionEvent;
 	import mx.events.CollectionEventKind;
-	import mx.events.DataGridEvent;
-	import mx.events.DataGridEventReason;
-	import mx.events.FlexMouseEvent;
 	import mx.events.PropertyChangeEvent;
 	import mx.events.PropertyChangeEventKind;
-	import mx.managers.PopUpManager;
-	import mx.styles.CSSStyleDeclaration;
 	import mx.styles.IStyleClient;
-	import mx.utils.ObjectUtil;
-	import mx.utils.ArrayUtil;
 	
 	public class ComponentStylesEditor extends VBox implements IPropertyEditor {
 		private static var COLOR: String = "color";
 		private static var COLORS: String = "colors";
+		private static const DEFAULT_STYLE_LIST : Array =["","backgroundColor","color,backgroundColor","font"];
 
 		private var _unfilteredComponentProperties: Array;
 		private var _componentProperties: ArrayCollection = new ArrayCollection();
@@ -78,17 +58,9 @@ package com.flexspy.imp {
 		override protected function createChildren():void {
 			super.createChildren();
 			
-			// Filter box
-			var filterBox: mx.containers.HBox = new mx.containers.HBox();
-			
-			var uiText: mx.controls.Text = new mx.controls.Text();
-			uiText.text = "Filter";
-			filterBox.addChild(uiText);
-			
-			var filterTextInput: TextInput = new mx.controls.TextInput();
-			filterTextInput.addEventListener("change", updateFilter);
-			filterBox.addChild(filterTextInput);
-			this.addChild(filterBox);
+			var filter : FieldFilter = new FieldFilter("style",DEFAULT_STYLE_LIST);
+			filter.addEventListener("change", updateFilter);
+			addChild(filter);
 
 			// Component table			
 			_currentEditor = new EditorClassFactory();
@@ -190,14 +162,15 @@ package com.flexspy.imp {
 				}
 			}
         }
-        
-        private function filterList(source: Array, filter: String): Array {
-        	var filteredArray: Array = new Array();
-        	var pattern: String = (filter == null || filter.length == 0) ? null : filter.toLocaleLowerCase();
-        	
+
+		private function filterList(source: Array, filter: String): Array {
+			var filteredArray: Array = new Array();
+			var pattern: String = (filter == null || filter.length == 0) ? null : filter.toLowerCase();
+			var regexp : RegExp = filter != null ? new RegExp(filter,"i") : null;
+			
         	for each (var property: PropertyEditorItem in source) {
         		var propName: String = property.name;
-        		if (pattern == null || propName.toLocaleLowerCase().indexOf(pattern) >= 0) {
+        		if (pattern == null || (propName && propName.match(regexp))) {
         			filteredArray.push(property);
         		}
         	}
@@ -227,8 +200,8 @@ package com.flexspy.imp {
         }
         
 
-        private function updateFilter(event: Event): void {
-        	_filter = mx.controls.TextInput(event.target).text;
+		private function updateFilter(event: TextEvent): void {
+		 	_filter = event.text;
         	updateTableContent();
         }
         

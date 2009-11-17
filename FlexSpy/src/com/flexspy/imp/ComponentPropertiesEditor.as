@@ -7,7 +7,7 @@
 package com.flexspy.imp {
 	
 	import flash.display.DisplayObject;
-	import flash.events.Event;
+	import flash.events.TextEvent;
 	import flash.utils.describeType;
 	import flash.utils.getQualifiedClassName;
 	
@@ -18,15 +18,12 @@ package com.flexspy.imp {
 	import mx.containers.VBox;
 	import mx.controls.DataGrid;
 	import mx.controls.Text;
-	import mx.controls.TextInput;
 	import mx.controls.dataGridClasses.DataGridColumn;
 	import mx.core.ClassFactory;
-	import mx.core.UIComponent;
 	import mx.events.CollectionEvent;
 	import mx.events.CollectionEventKind;
 	import mx.events.PropertyChangeEvent;
 	import mx.events.PropertyChangeEventKind;
-	import mx.managers.PopUpManager;
 	
 	public class ComponentPropertiesEditor extends VBox implements IPropertyEditor {
 
@@ -37,7 +34,7 @@ package com.flexspy.imp {
         private var _currentEditor: EditorClassFactory;
         private var _currentObject: DisplayObject;
         private static var FILTERED_PROPERTIES: Array = ["textSnapshot", "accessibilityImplementation", "accessibilityProperties", "automationDelegate", "automationValue", "automationTabularData", "numAutomationChildren", "contextMenu", "focusManager", "styleDeclaration", "systemManager", "descriptor", "rawChildren", "verticalScrollBar", "horizontalScrollBar", "stage", "graphics", "focusPane", "loaderInfo", "moduleFactory", "transform", "soundTransform", "inheritingStyles", "nonInheritingStyles" ];
-		
+		private static var DEFAULT_PROPERTY_LIST : Array = ["","width,height","visible,alpha","width,height,visible,alpha"];
 	    /**
 	     * Initializes a new instance of this class
 	     */
@@ -57,17 +54,9 @@ package com.flexspy.imp {
 		override protected function createChildren():void {
 			super.createChildren();
 			
-			// Filter box
-			var filterBox: mx.containers.HBox = new mx.containers.HBox();
-			
-			var uiText: mx.controls.Text = new mx.controls.Text();
-			uiText.text = "Filter";
-			filterBox.addChild(uiText);
-			
-			var filterTextInput: TextInput = new mx.controls.TextInput();
-			filterTextInput.addEventListener("change", updateFilter);
-			filterBox.addChild(filterTextInput);
-			this.addChild(filterBox);
+			var filter : FieldFilter = new FieldFilter("property",DEFAULT_PROPERTY_LIST);
+			filter.addEventListener("change", updateFilter);
+			addChild(filter);
 
 			// Component table			
 			_currentEditor = new EditorClassFactory();
@@ -163,9 +152,9 @@ package com.flexspy.imp {
         private function filterList(source: Array, filter: String): Array {
         	var filteredArray: Array = new Array();
         	var pattern: String = (filter == null || filter.length == 0) ? null : filter.toLowerCase();
-        	
+        	var regexp : RegExp = filter != null ? new RegExp(filter,"i") : null;
         	for each (var property: PropertyEditorItem in source) {
-        		if (pattern == null || property.name.toLowerCase().indexOf(pattern) >= 0) {
+        		if (pattern == null || property.name.match(regexp)) {
         			filteredArray.push(property);
         		}
         	}
@@ -201,8 +190,8 @@ package com.flexspy.imp {
 			return attribute;
         }
         
-        private function updateFilter(event: Event): void {
-        	_filter = mx.controls.TextInput(event.target).text;
+        private function updateFilter(event: TextEvent): void {
+        	_filter = event.text;
         	updateTableContent();
         }
         

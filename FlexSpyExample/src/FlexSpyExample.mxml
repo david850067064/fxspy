@@ -10,13 +10,28 @@
 		<![CDATA[
 			import com.flexspy.FlexSpy;
 			
+			import mx.containers.Panel;
+			import mx.core.UIComponent;
+			import mx.managers.PopUpManager;
+			
 			import pm.MainPM;
+			import pm.TestViewPM;
 			[Bindable]
 			public var model : MainPM = new MainPM();
 			
 			private function onCreationComplete() : void{
 				FlexSpy.addContextMenuTo( this );
 				FlexSpy.addModule(LogViewer);
+			}
+			
+			private function showPopup() : void{
+				var popup : UIComponent = PopUpManager.createPopUp(this, Panel, true) as UIComponent;
+				var pm : TestViewPM = new TestViewPM("popup", 0xaaaaaa);
+				var popupView : TestView = new TestView();
+				popupView.model = pm;
+				popup.addChild(popupView);
+				PopUpManager.centerPopUp(popup);
+				FlexSpy.addContextMenuTo(popup);
 			}
 			
 		]]>
@@ -32,4 +47,5 @@
 		<mx:Button label="previous" click="model.previousView()" />
 		<mx:Button label="next" click="model.nextView()" />
 	</mx:HBox>
+	<mx:Button label="show a popoup" click="showPopup()" />
 </mx:Application>
