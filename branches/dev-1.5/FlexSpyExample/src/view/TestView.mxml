@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" 
+	width="300" height="50"
+	backgroundColor="{ model.color }"
+	>
+	<mx:Script>
+		<![CDATA[
+			import pm.TestViewPM;
+			
+			[Bindable] 
+			public var model : TestViewPM;
+			
+		]]>
+	</mx:Script>
+	
+	<mx:VBox
+		width="200"
+		horizontalCenter="0"
+		verticalCenter="0"
+		horizontalAlign="center"		
+	>
+	<mx:Label text="{ model.name }" />
+		<mx:Button label="hi there" click="model.sayHello()"/>
+	</mx:VBox>
+	
+		
+</mx:Canvas>

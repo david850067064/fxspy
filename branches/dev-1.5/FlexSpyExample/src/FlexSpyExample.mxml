@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" 
+				xmlns:view="view.*"
+				layout="vertical" 
+				horizontalAlign="center"
+				verticalAlign="top"
+				creationComplete="onCreationComplete()"
+				>
+	<mx:Script>
+		<![CDATA[
+			import com.flexspy.FlexSpy;
+			
+			import pm.MainPM;
+			[Bindable]
+			public var model : MainPM = new MainPM();
+			
+			private function onCreationComplete() : void{
+				FlexSpy.addContextMenuTo( this );
+				FlexSpy.addModule(LogViewer);
+			}
+			
+		]]>
+	</mx:Script>
+	<mx:ViewStack id="mainStack"
+				  selectedIndex="{ model.selectedIndex} ">
+		<view:TestView model="{ model.model1 }" />
+		<view:TestView model="{ model.model2 }" />
+		<view:TestView model="{ model.model3 }" />
+		
+	</mx:ViewStack>
+	<mx:HBox>
+		<mx:Button label="previous" click="model.previousView()" />
+		<mx:Button label="next" click="model.nextView()" />
+	</mx:HBox>
+</mx:Application>
