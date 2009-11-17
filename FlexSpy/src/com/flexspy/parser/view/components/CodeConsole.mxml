@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml"
+	width="100%" height="100%"
+	currentState="{ modifier.currentState }"
+	creationComplete="init()" xmlns:components="com.flexspy.parser.view.components.*">
+	 
+	<mx:states>
+		<mx:State name="BigEntry">
+			<mx:SetProperty target="{consoleCanvas}" name="height" value="100%"/>
+			<mx:SetProperty target="{consoleCanvas}" name="width" value="300"/>
+			<mx:SetProperty target="{output}" name="width" value="{ width - consoleCanvas.width }"/>
+			<mx:SetProperty target="{output}" name="height" value="100%"/>
+			
+			<mx:SetStyle target="{processButton}" name="bottom" value="0"/>
+			<mx:SetStyle target="{processButton}" name="verticalCenter"/>
+			<mx:SetStyle target="{inputControls}" name="verticalCenter"/>
+			<mx:SetStyle target="{inputControls}" name="bottom" value="0"/>
+			<mx:SetProperty target="{txtCode}" name="width" value="100%"/>
+			<mx:SetProperty target="{changeSizeButton}" name="label" value="\/"/>
+			<mx:SetProperty target="{txtCode}" name="height">
+				<mx:value>{ consoleCanvas.height - 25 }</mx:value>
+			</mx:SetProperty>
+		</mx:State>
+	</mx:states>
+	
+	<mx:Script>
+		<![CDATA[
+			import com.flexspy.parser.model.FTConstants;
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+			import mx.collections.ArrayCollection;
+			import com.flexspy.parser.model.HistoryManager;
+			import com.flexspy.parser.model.ASParser;
+			import com.flexspy.parser.model.domain.Snippet;
+		
+			import com.flexspy.parser.event.SnippetEvent;
+			import com.flexspy.parser.util.PopUpUtil;
+			import com.flexspy.parser.model.FlexTrampModelLocator;
+			import com.flexspy.parser.model.presentation.components.CodeConsoleModifier;
+			
+			public static const CONSOLE_CLEARED : String = "ConsoleCleared";
+			
+			
+			[Bindable] private var modifier : CodeConsoleModifier;
+			[Bindable] private var stateName : String = "";
+			
+			
+			private function init() : void
+			{
+				var parser: ASParser = FlexTrampModelLocator.getInstance().parser;
+				var historyManager: HistoryManager = FlexTrampModelLocator.getInstance().historyManager;
+				
+				modifier = new CodeConsoleModifier( parser, historyManager );
+				modifier.historyManager.addEventListener( 
+					HistoryManager.HISTORY_MOVED, handleHistoryMoved );
+				modifier.addEventListener( 
+					CONSOLE_CLEARED, handleConsoleCleared );
+	            setStyleSheet();
+			
+				//Mike h : Can we extract this context menu stuff somewhere?
+				var addSnippetContextItem : ContextMenuItem =
+						new ContextMenuItem( "Add as snippet", true );
+						
+				output.contextMenu = new ContextMenu();
+				
+				addSnippetContextItem.addEventListener(  
+					ContextMenuEvent.MENU_ITEM_SELECT,
+					handleContextMenuSelect );
+					
+				output.contextMenu.customItems = [ addSnippetContextItem ];
+				
+				txtCode.setFocus();
+			}
+
+			private function handleHistoryMoved( event : TextEvent ) : void 
+			{
+				txtCode.text = event.text;
+				txtCode.setFocus();
+				txtCode.moveToEndOfLine();
+				if (txtCode.text.indexOf("\n") != -1 ) 
+						modifier.currentState = CodeConsoleModifier.STATE_BIG_ENTRY;
+			}
+
+			public function handleConsoleCleared( event : Event = null ) : void 
+			{
+				processButton.setFocus();
+				txtCode.text = "";
+				txtCode.setFocus();
+			}
+
+			public function addText( event : TextEvent ) : void 
+			{
+				modifier.handleOutputText( event );
+			}
+			
+			private function setStyleSheet() : void
+			{
+				var sheet : StyleSheet = new StyleSheet;
+				var info : Object = new Object;
+				info.fontWeight = "normal";
+				info.color = "#3333FF";
+				
+				var command : Object = new Object;
+				command.fontWeight = "bold";
+				command.color = "#3333FF";
+				
+				var error : Object = new Object;
+				error.fontWeight = "bold";
+				error.color = "#FF3333";
+				
+				var normal : Object = new Object;
+				normal.fontWeight = "normal";
+				normal.color = "#000000";
+				
+				sheet.setStyle( ".normal", normal );
+				sheet.setStyle( ".error", error );
+				sheet.setStyle( ".info", info );
+				sheet.setStyle( ".commad", command );
+				
+				output.styleSheet = sheet;
+			}
+			
+			private function handleShowSnippets() : void
+			{
+				var snippets : SnippetsManager = new SnippetsManager();
+				
+				snippets.addEventListener( SnippetEvent.SNIPPET_SELECTED,
+						handleSnippetSelected );
+				
+				PopUpUtil.addCenteredPopUp( snippets, false );
+			}
+			
+			private function handleSnippetSelected( event : SnippetEvent ) : void
+			{
+				txtCode.text = event.snippet.code;
+				txtCode.setFocus();
+			}
+			
+			private function handleContextMenuSelect( event : ContextMenuEvent ) : void
+			{
+				var selectedCode :  String = output.text.substring( 
+												output.selectionBeginIndex, 
+												output.selectionEndIndex );
+			
+				var addSnippet : AddSnippet = new AddSnippet();
+				
+				addSnippet.code = Snippet.parseCodeFromText( selectedCode );
+				
+				PopUpUtil.addCenteredPopUp( addSnippet );  
+					
+			}
+
+		]]>
+	</mx:Script>
+	
+	<mx:TextArea id="output" width="100%" height="{ height-24 }" 
+				left="0" 
+				top="0"
+				color="#000000" 
+				backgroundColor="#ffffff"
+				editable="false"
+				htmlText="{ modifier.outputText }"
+				valueCommit="{output.verticalScrollPosition = output.maxVerticalScrollPosition}" />
+
+	<mx:Canvas width="100%" id="consoleCanvas" bottom="0" height="24" right="0">
+		<components:CodeInput id="txtCode" 
+				width="{ consoleCanvas.width - (inputControls.width +5) }"
+				height="{consoleCanvas.height}" 
+				color="#000000" verticalCenter="0" left="0"
+				MoveHistoryUp = "{ if ( currentState != ' BigEntry' ) modifier.moveHistoryUp() }"
+				MoveHistoryDown = "{ modifier.moveHistoryDown() }"
+				InputIsMultiLine = "{  if ( currentState != ' BigEntry' ) modifier.currentState = CodeConsoleModifier.STATE_BIG_ENTRY }"
+				ProcessInput = "{ modifier.processTextCommand( txtCode.text ) }"
+			/>
+		<mx:HBox id="inputControls" right="0" verticalCenter="0">
+			<mx:Button id="changeSizeButton" label="/\" 
+					click="modifier.toggleInputSize()" color="#000000" />
+			
+			<mx:Button id="processButton" 
+				label="Process" 
+				color="#000000"
+				click="modifier.processTextCommand( txtCode.text )" />
+			 
+			<mx:Button id="snippetsButton" 
+				label="Snippets"
+				color="#000000"
+				click="handleShowSnippets()" />
+				
+		</mx:HBox>
+		 
+	</mx:Canvas>
+	
+</mx:Canvas>

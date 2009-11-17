@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TextArea xmlns:mx="http://www.adobe.com/2006/mxml"
+   backgroundColor="#ffffff">
+	<mx:Script>
+		<![CDATA[
+			import mx.core.UITextField;
+			private var currentLine : int;
+			
+			public function getCurrentLine() : int
+			{
+				return textField.getLineIndexOfChar( textField.caretIndex -1 );
+			}
+			
+			public function getNumLines() : int
+			{
+				return textField.numLines;
+			}
+			
+			public function getCurrentLineText( trimToCaret : Boolean = false ) : String
+			{
+				var currentLine : int = getCurrentLine();
+				var s : String = currentLine == -1 ? "" : textField.getLineText( currentLine );
+				
+				if ( trimToCaret )
+				{
+					var startIndex : int = currentLine == -1 ? 0 : textField.getLineOffset( currentLine );
+					s = s.substring( 0, textField.caretIndex - startIndex );	
+				}
+				
+				return s;
+			}
+			
+			public function removeMostRecentChar() : void
+			{
+				textField.replaceText(textField.caretIndex-1, textField.caretIndex , "");
+			}
+			
+			
+			public function moveToEndOfLine() : void
+			{
+			   textField.validateNow();
+				var currentLine : int = getCurrentLine() ;
+				currentLine = currentLine == -1 ? 0 : currentLine;
+				var lastLineIndex : int = 
+						textField.getLineOffset( currentLine ) + textField.getLineLength( currentLine );
+				textField.setSelection( lastLineIndex, lastLineIndex );
+			}
+			
+			//debug
+			public function getTextField() : UITextField
+			{
+				return UITextField( textField );
+			}
+		]]>
+	</mx:Script>
+</mx:TextArea>

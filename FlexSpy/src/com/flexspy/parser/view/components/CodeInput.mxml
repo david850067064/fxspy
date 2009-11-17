@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="utf-8"?>
+<InspectableTextArea 
+	xmlns="com.flexspy.parser.view.components.*" xmlns:mx="http://www.adobe.com/2006/mxml"
+	initialize="init()"
+	keyDown="processKeyStroke (event )" 
+	textInput="textInput (event)" 
+	>
+	<mx:Metadata>
+		[Event("MoveHistoryUp")]
+		[Event("MoveHistoryDown")]
+		[Event("InputIsMultiLine")]
+		[Event("ProcessInput")]
+	</mx:Metadata>
+	<mx:Script>
+		<![CDATA[
+			import com.flexspy.parser.model.FTConstants;
+			import mx.managers.PopUpManager;
+			public static const MOVE_HISTORY_UP : String = "MoveHistoryUp";
+			public static const MOVE_HISTORY_DOWN : String = "MoveHistoryDown";
+			public static const INPUT_IS_MULTILINE : String = "InputIsMultiLine";
+			public static const PROCESS_INPUT : String = "ProcessInput";
+
+			private static const STOP_CODE_COMPLETE : int = 0;
+			private static const START_CODE_COMPLETE : int = 1;
+			private static const UPDATE_CODE_COMPLETE : int = 2;
+			private static const IGNORE_CODE_COMPLETE : int = 3;
+			
+			private var codeCompletePopup : CodeCompletePopup;
+			private var previousCodeConsoleLine : int = 1;
+			private var cancelTextInput : Boolean = false; //used to cancel extra space, when we press CTRL SPACE
+			private var codeCompleteUpdateStatus : int = IGNORE_CODE_COMPLETE;
+
+			private var _timer : Timer = new Timer(1,1);
+			private var _previousCaretPos : int;
+			private var updatePopPos : Boolean;
+			
+			private function init() : void
+			{
+				codeCompletePopup = new CodeCompletePopup();
+				codeCompletePopup.init();
+				//PopUpManager.addPopUp( codeCompletePopup, this );
+				var p : Point = new Point( x, y - codeCompletePopup.height );
+				codeCompletePopup.y = contentToGlobal( p ).y;
+				codeCompletePopup.y = 400;
+				codeCompletePopup.addEventListener( CodeCompletePopup.SELECTED, addSelectedText );
+				_timer.addEventListener( TimerEvent.TIMER_COMPLETE, timerDone );
+			}
+			
+			/* make sure that we should process up and down key presses */
+			private function processKeyStroke ( event : KeyboardEvent ) : void
+			{
+				if (event != null )
+				{
+					if ( isActiveKeyStroke( event ) ) return;
+					if ( !( event.keyCode == Keyboard.ENTER && !event.shiftKey ) )
+					{
+						var currentLine : int = getCurrentLine();
+						
+						//TODO tidy this if statement up
+						if  ( event.keyCode == Keyboard.ENTER && event.shiftKey )
+						{
+							dispatchEvent( new Event ( INPUT_IS_MULTILINE ) );
+						}
+						if (event.keyCode == Keyboard.UP && !getCodeCompleteActive() ) //currentLine==1 && previousCodeConsoleLine==1 ) 
+						{
+							dispatchEvent( new Event ( MOVE_HISTORY_UP ) );
+						}
+						if (event.keyCode == Keyboard.DOWN && !getCodeCompleteActive() )//currentLine 
+								//== getNumLines() 
+								//&& previousCodeConsoleLine == getNumLines()  )
+						{
+							dispatchEvent( new Event ( MOVE_HISTORY_DOWN ) );
+						}
+						if ( event.keyCode == Keyboard.ESCAPE && !getCodeCompleteActive() ) 
+						{
+							clearText();
+							updateCodeCompletion( STOP_CODE_COMPLETE );
+						}
+						
+						checkKeyToUpdateCodeCompletionStatus( event );
+
+						previousCodeConsoleLine = currentLine;
+						return;
+					}
+				}
+				
+				if ( codeCompletePopup.active )
+				{
+					codeCompletePopup.hide();
+				}	
+				cancelTextInput = true;
+				resetCaret( getCurrentLineText().length );
+				dispatchEvent( new Event ( PROCESS_INPUT ) );
+				
+			}
+			
+			
+			private function isActiveKeyStroke( event : KeyboardEvent ) : Boolean
+			{
+				var activeKeyStroke : Boolean = false;
+				if ( !codeCompletePopup.active ) return activeKeyStroke;
+				
+				if ( event.keyCode == Keyboard.ENTER && !event.shiftKey ) 
+				{
+					addSelectedText();
+					activeKeyStroke = true;
+					cancelTextInput = true;
+					
+				}
+				
+				if ( event.keyCode == Keyboard.ESCAPE ) 
+				{
+					updateCodeCompletion( STOP_CODE_COMPLETE );
+					activeKeyStroke = true;
+					cancelTextInput = true;
+					
+				}
+				
+				if ( event.keyCode == Keyboard.BACKSPACE ) 
+				{
+					updatePopPos = true;
+				}
+				
+				if ( event.keyCode == Keyboard.UP )
+				{
+					codeCompletePopup.selectPrevious();
+					resetCaret();
+					activeKeyStroke = true;
+				}
+
+				if ( event.keyCode == Keyboard.DOWN )
+				{
+					codeCompletePopup.selectNext();
+					resetCaret();
+					activeKeyStroke = true;
+				}
+				
+				if ( String.fromCharCode( event.charCode ) == "." ) 
+				{
+					addSelectedText( null, "." );
+					activeKeyStroke = true;
+				}
+				
+				if ( event.keyCode == Keyboard.SPACE ) 
+				{
+					addSelectedText( null, " " );
+					activeKeyStroke = true;
+				}
+
+				
+				return activeKeyStroke;
+			}
+			
+			private function addSelectedText ( event : TextEvent = null, 
+					char : String = "" ) : void 
+			{
+				var s : String = event==null ? codeCompletePopup.selectItem() : event.text;
+				text = text + s + char ;
+				cancelTextInput = true;
+				resetCaret(  textField.caretIndex + s.length );
+			}
+
+			private function clearText () : void
+			{
+				cancelTextInput = false;
+				text = "";
+			}
+			
+			private function getCodeCompleteActive() : Boolean
+			{
+				return codeCompletePopup.active;
+			}
+			
+			private function checkKeyToUpdateCodeCompletionStatus( event : KeyboardEvent ) : void
+			{
+				if ( event.charCode == 0 ) return;
+				if ( event.keyCode == Keyboard.SPACE && event.ctrlKey )
+				{
+					//remove the text aht would be next to the code we entered
+					//remove the space
+					cancelTextInput = true;
+					updateCodeCompletion( START_CODE_COMPLETE );
+					return;
+				}
+				if ( !codeCompletePopup.active ) return;
+				if (FTConstants.codeCompleteWhiteSpace.test( event.keyCode.toString() ) )
+				{
+					updateCodeCompletion( STOP_CODE_COMPLETE );
+					return;
+				}
+				updateCodeCompletion( UPDATE_CODE_COMPLETE, event);
+			}
+			
+			private function updateCodeCompletion ( type : int, event : KeyboardEvent = null ) : void
+			{
+				var currentLineText : String = getCurrentLineText( true );
+				
+				//we need to update the text to reveal the true contents
+				if ( event != null )
+				{
+					if ( event.keyCode == Keyboard.BACKSPACE )
+					{
+						currentLineText = 
+								currentLineText.substr(0, currentLineText.length -1 );
+					} else
+					{
+						currentLineText += String.fromCharCode( event.charCode );
+					}
+				}
+				
+				switch ( type )
+				{
+					case STOP_CODE_COMPLETE:
+						codeCompletePopup.endCodeComplete();
+					break;
+					case START_CODE_COMPLETE:
+						codeCompletePopup.startCodeCompletion( currentLineText );
+						updatePopPos = true;
+					break;
+					case UPDATE_CODE_COMPLETE:
+						codeCompletePopup.updateCodeCompletion( currentLineText );
+						updatePopPos = true;
+					break;
+				}
+			}
+			private function updatePopupPosition() : void
+			{
+				var p : Point = new Point( x, y );
+				var lineWidth : TextLineMetrics = measureText( getCurrentLineText( true ) );
+				p.x += lineWidth.width;
+				codeCompletePopup.x = localToGlobal( p ).x;
+			}
+			private function resetCaret( newIndex : Number = -1 ) : void
+			{
+				_previousCaretPos = newIndex != -1 ? newIndex : this.selectionBeginIndex;
+				_timer.reset();
+				_timer.start();
+			}
+			
+			private function textInput( event : Event ) : void
+			{
+				if ( cancelTextInput )
+				{ 
+					event.preventDefault();
+					cancelTextInput = false;
+				}
+				if ( updatePopPos ) updatePopupPosition();
+				if ( codeCompleteUpdateStatus != IGNORE_CODE_COMPLETE ) 
+						updateCodeCompletion( codeCompleteUpdateStatus );
+			}
+			
+			/* resets caret position */
+			private function timerDone( evt : TimerEvent ) : void 
+			{						
+				this.selectionBeginIndex = _previousCaretPos;
+				this.selectionEndIndex = _previousCaretPos;
+			}
+		]]>
+	</mx:Script>
+</InspectableTextArea>

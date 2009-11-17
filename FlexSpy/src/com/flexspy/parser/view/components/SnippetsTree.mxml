@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Tree xmlns:mx="http://www.adobe.com/2006/mxml"
+	dataProvider="{ model.snippetsRoot }"
+	dataDescriptor="{ new SnippetsDataDescriptor() }"
+	labelField="name"
+	showRoot="false">
+	
+	<mx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+		
+			import com.flexspy.parser.model.domain.Snippet;
+			import com.flexspy.parser.model.presentation.components.SnippetsDataDescriptor;
+			import com.flexspy.parser.model.presentation.components.SnippetManagerModifier;
+			
+			[Bindable]
+			public var model : SnippetManagerModifier;
+			 
+		]]>
+	</mx:Script>
+
+</mx:Tree>

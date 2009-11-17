@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow 
+	title="New Category"
+	xmlns:mx="http://www.adobe.com/2006/mxml" 
+	layout="vertical"
+	showCloseButton="true"
+	close="closeView()"
+	creationComplete="handleCreationComplete()">
+	
+	<mx:Script>
+		<![CDATA[
+			import com.flexspy.parser.event.SnippetCategoryEvent;
+			import com.flexspy.parser.model.domain.SnippetCategory;
+			import com.flexspy.parser.model.FlexTrampModelLocator;
+			import com.flexspy.parser.model.presentation.components.NewSnippetCategoryModifier;
+				
+			import mx.managers.PopUpManager;
+			import mx.validators.Validator;
+			
+			public function set parentCategory( value : SnippetCategory ) : void
+			{	
+				model.parent = value;
+			}
+			
+			[Bindable]
+			private var model : NewSnippetCategoryModifier;
+			
+			private function createModels() : void
+			{
+				var flexTrampModelLocator: FlexTrampModelLocator = FlexTrampModelLocator.getInstance();
+				
+				model = new NewSnippetCategoryModifier( flexTrampModelLocator.snippets ); 	
+			} 
+			
+			private function closeView() : void
+			{
+				PopUpManager.removePopUp( this );	
+			}
+			
+			private function handleCreationComplete() : void
+			{
+				createModels();
+				categoryName.setFocus();
+			}
+			
+			private function handleAddCategory() : void
+			{
+				if( Validator.validateAll( [ nameValidator ] ).length == 0 )
+				{
+					var addedCategory : SnippetCategory = model.addCategory();
+					
+					var event : SnippetCategoryEvent = new SnippetCategoryEvent( 
+							SnippetCategoryEvent.SNIPPET_CATEGORY_ADDED );
+					 
+					event.category = addedCategory;
+					
+					dispatchEvent( event );
+							
+					closeView();
+				}
+			}
+			
+		]]>
+	</mx:Script>
+	
+	<mx:StringValidator id="nameValidator"
+		required="true"
+		source="{ categoryName }"
+		property="text" />
+	
+	<mx:Form width="100%">
+		
+		<mx:FormItem
+			label="Parent"
+			width="100%">
+			<mx:Label text="{ model.parent.name }" />	
+		</mx:FormItem>
+		
+		<mx:FormItem 
+			label="Name" 
+			required="true"
+			width="100%">
+			<mx:TextInput id="categoryName"
+				text="{ model.name }"
+				change=" model.name = categoryName.text "
+				width="100%" />
+		</mx:FormItem>
+		
+		<mx:FormItem width="100%">
+			<mx:Button 
+				label="Add"
+				click="handleAddCategory()" />
+		</mx:FormItem>	
+		
+	</mx:Form>
+	
+</mx:TitleWindow>
