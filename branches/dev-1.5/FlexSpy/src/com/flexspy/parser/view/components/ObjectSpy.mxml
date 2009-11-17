@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="100%" height="100%"
+	creationComplete="init()">
+	
+	<mx:Script>
+		<![CDATA[
+			import com.flexspy.parser.model.IASParser;
+			import com.flexspy.parser.model.ASParser;
+			import com.flexspy.parser.model.presentation.components.ObjectSpyModifier;
+			import com.flexspy.parser.model.FlexTrampModelLocator;
+			
+			public static const HINT_OBJECT_PATH : String = "hintObjectPath";
+						
+			[Bindable] private var modifier : ObjectSpyModifier;
+			
+			private function init() : void
+			{
+				var parser : IASParser = FlexTrampModelLocator.getInstance().parser as IASParser;
+				modifier = new ObjectSpyModifier( parser );
+				modifier.addEventListener( HINT_OBJECT_PATH, handleObjectHint );
+			}
+			
+			private function handleObjectHint( event : TextEvent ) : void
+			{
+				var e : TextEvent = new TextEvent( HINT_OBJECT_PATH );
+				e.text = event.text;
+				dispatchEvent ( e );
+			}
+			
+			public function setCurrentObject( varName : String ) : void
+			{
+				modifier.setCurrentObject( varName );
+			}
+		]]>
+	</mx:Script>
+	
+	
+	<mx:Label text="Current Item: { modifier.currentObjectTitle }" width="100%"/>
+	<mx:Tree id="objectTree" height="100%" width="100%"
+		dataProvider="{ modifier.currentObjectTree  }"
+		showRoot="false"
+		itemOpen="modifier.handleOpenItem(event)"
+		itemClose="modifier.handleCloseItem(event)"
+		labelField="@label"
+		doubleClick="modifier.handleDoubleClick(event)"
+		doubleClickEnabled="true"
+		/>
+	
+</mx:Canvas>

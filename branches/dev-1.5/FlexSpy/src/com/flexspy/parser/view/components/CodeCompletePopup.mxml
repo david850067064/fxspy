@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel xmlns:mx="http://www.adobe.com/2006/mxml" 
+	layout="vertical" width="400" height="300">
+	
+	<mx:Metadata>
+		[Event(name="Selected", type="flash.events.TextEvent")]
+	</mx:Metadata>
+	<mx:Script>
+		<![CDATA[
+			import com.flexspy.parser.util.StringUtil;
+			import mx.binding.utils.ChangeWatcher;
+			import com.flexspy.parser.model.IASParser;
+			import mx.core.Application;
+			import mx.managers.PopUpManager;
+			import com.flexspy.parser.model.FlexTrampModelLocator;
+			import com.flexspy.parser.model.IReflectionParser;
+			import mx.collections.ArrayCollection;
+			import com.flexspy.parser.model.presentation.components.CodeCompletePopupModifier;
+	
+			public static var SELECTED : String = "Selected";
+			[Bindable] private var modifier: CodeCompletePopupModifier;
+			
+			//TODO - currently have to call this manually - need to change that behaviour..
+			public function init():void
+			{
+				var parser : IASParser = FlexTrampModelLocator.getInstance().parser as IASParser;
+				modifier = new CodeCompletePopupModifier( parser );
+			}
+			
+			public function startCodeCompletion( s : String ) : void
+			{
+				modifier.startCodeCompletion( s );	
+				if ( active )
+				{
+					PopUpManager.addPopUp( this, Sprite( Application.application ) );
+					matchList.selectedIndex = 0;
+				}
+			}
+			
+			public function updateCodeCompletion( s : String ) : void
+			{
+				modifier.updateCodeCompletion( s );
+				matchList.selectedIndex = 0;
+			}
+			
+			public function endCodeComplete( event : Event = null ) : void
+			{
+				modifier.endCodeComplete();
+				PopUpManager.removePopUp( this );
+			}
+
+			public function get active() : Boolean
+			{
+				return modifier.codeCompleter.active;
+			}
+			
+			//repsonsibe for handlign the current item
+			public function selectItem( getDifference : Boolean = true ) : String
+			{
+				//paste the code
+				//show method args, and opening brace if required
+				//end the completion
+				var selectedItem : String = matchList.selectedItem.label;
+				var currentPhrase : String = modifier.codeCompleter.getCurrentMatchString();
+				var matchedPhrase : String = 
+						modifier.codeCompleter.getMatchedPartOfCurrentPhrase();
+				if ( currentPhrase.indexOf(".") == -1 ) matchedPhrase = currentPhrase;
+				if ( currentPhrase.lastIndexOf(".") == currentPhrase.length-1 ) matchedPhrase = "";
+				
+				if ( getDifference ) selectedItem = StringUtil.getDifference( 
+						selectedItem, matchedPhrase );
+				endCodeComplete();
+				return selectedItem;
+			}
+			
+			public function hide() : void
+			{
+				if ( active ) modifier.codeCompleter.reset();
+			}
+			
+			public function selectPrevious () : void
+			{
+				if ( matchList.selectedIndex > 0 ) matchList.selectedIndex--;
+			}
+			
+			public function selectNext () : void
+			{
+				if ( matchList.selectedIndex < 10 ) matchList.selectedIndex++;
+			}
+
+			private function doSelection ( event : Event = null ) : void
+			{
+				var s : String = selectItem( );
+				var e : TextEvent = new TextEvent( SELECTED );
+				e.text = s;
+				dispatchEvent( e );
+			}
+			
+			private function doScroll() : void
+			{
+				matchList.scrollToIndex( matchList.selectedIndex );
+			}
+			
+			private function handleKeyDown( event: KeyboardEvent ) : void 
+			{
+				if ( event.keyCode == Keyboard.ENTER ) doSelection();
+			}
+		]]>
+	</mx:Script>
+	
+	<mx:TextArea id="debug" width="100%" height="50%" 
+			text="{ modifier.codeCompleter.debugText }" 
+			change="{ debug.verticalScrollPosition = debug.maxVerticalScrollPosition }" />
+	<mx:List id="matchList" width="100%" height="50%" 
+			doubleClickEnabled="true"
+			doubleClick="{ doSelection() }"
+			keyDown="handleKeyDown( event )"
+			dataProvider="{ modifier.codeCompleter.matches }" />
+</mx:Panel>

@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Tree xmlns:mx="http://www.adobe.com/2006/mxml"
+	dataProvider="{ model.snippetsRoot }"
+	labelField="name"
+	creationComplete="handleCreateComplete()">
+	
+	<mx:Binding source="{ selectedItem!=null }" destination="hasSelected" />
+		
+	<mx:Script>
+		<![CDATA[
+			import mx.events.ListEvent;
+			import mx.controls.treeClasses.ITreeDataDescriptor;
+			import mx.binding.utils.BindingUtils;
+			import mx.collections.ArrayCollection;
+		
+			import com.flexspy.parser.event.SnippetCategoryEvent;
+			import com.flexspy.parser.model.FlexTrampModelLocator;
+			import com.flexspy.parser.model.presentation.components.SnippetsCategoryTreeModifier;
+			import com.flexspy.parser.model.domain.SnippetCategory;
+			import com.flexspy.parser.util.PopUpUtil;
+			import com.flexspy.parser.model.presentation.components.SnippetsCategoryDataDescriptor;
+			
+			[Bindable]
+			public var hasSelected : Boolean;
+			
+			[Bindable]
+			public var model : SnippetsCategoryTreeModifier;
+			
+			private function handleCreateComplete() : void
+			{
+				createContextMenuItems();
+				createModels();
+				
+				dataDescriptor = new SnippetsCategoryDataDescriptor(); 
+			}
+			
+			private function createModels() : void
+			{
+				var flexTrampModelLocator: FlexTrampModelLocator = FlexTrampModelLocator.getInstance();
+				
+				model = new SnippetsCategoryTreeModifier( flexTrampModelLocator.snippets );
+			}
+			
+			private function createContextMenuItems() : void
+			{
+				var addCategoryItem : ContextMenuItem 
+						= new ContextMenuItem( "New...");
+				
+				BindingUtils.bindProperty( 
+						addCategoryItem,
+						"visible",
+						this,
+						"hasSelected" );
+						
+				addCategoryItem.addEventListener( 
+						ContextMenuEvent.MENU_ITEM_SELECT,
+						handleContextMenuItemSelected );
+				
+				contextMenu = new ContextMenu();
+				
+				contextMenu.customItems = [ addCategoryItem ];	
+			}
+			
+			private function handleContextMenuItemSelected( event : ContextMenuEvent ) : void
+			{
+				if( selectedItem )
+				{
+					var addCategory : NewSnippetCategory = new NewSnippetCategory();
+				
+					PopUpUtil.addCenteredPopUp( addCategory );
+				
+					addCategory.parentCategory = SnippetCategory( selectedItem );
+					
+					addCategory.addEventListener( 
+							SnippetCategoryEvent.SNIPPET_CATEGORY_ADDED,
+							handleNewCategoryAdded );
+				}
+			}
+			
+			private function handleNewCategoryAdded( event : SnippetCategoryEvent ) : void
+			{
+				var newCategory : SnippetCategory = event.category;
+				var itemsToOpen : Array = [];
+				var currentCategory : SnippetCategory = newCategory;
+				
+				itemsToOpen.push( currentCategory )
+					
+				while( !(currentCategory.isRoot()) )
+				{
+					currentCategory = currentCategory.parent;
+					itemsToOpen.push( currentCategory );
+				}
+				
+				openItems = itemsToOpen;
+				
+				validateNow();
+					
+				selectedItem = newCategory;
+				
+				if( ( selectedIndex+1 ) >= ( verticalScrollPosition + rowCount ) )
+				{
+					verticalScrollPosition = ( selectedIndex+1 ) - rowCount;
+				}
+				
+				dispatchEvent( new ListEvent( ListEvent.CHANGE ) );
+			}
+			
+		]]>
+	</mx:Script>
+
+</mx:Tree>

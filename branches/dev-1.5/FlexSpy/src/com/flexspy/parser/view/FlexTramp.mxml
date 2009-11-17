@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml"
+	xmlns:FlexTramp="com.flexspy.parser.*"
+	xmlns:panels="com.flexspy.parser.view.panels.*"
+	xmlns:components="com.flexspy.parser.view.components.*"
+	width="1005" height="100%" 
+	creationComplete="init()"
+	>
+	
+	<mx:Script>
+		<![CDATA[
+		
+			import com.flexspy.parser.view.components.ObjectSpy;
+			import com.flexspy.parser.model.FlexTrampModelLocator;
+			import com.flexspy.parser.model.presentation.components.ObjectSpyModifier;
+			import com.flexspy.parser.model.presentation.FlexTrampModifier;
+			
+			import mx.managers.PopUpManager;
+			import mx.events.ListEvent;
+			import mx.controls.List;
+			
+			[Bindable] private var modifier : FlexTrampModifier;
+			[Bindable] private var flexTrampModelLocator: FlexTrampModelLocator = FlexTrampModelLocator.getInstance();
+			
+			private function init() : void
+			{
+				variablePanel.objectSpy.addEventListener( 
+					ObjectSpy.HINT_OBJECT_PATH, 
+					codeConsole.addText );
+					
+				modifier = new FlexTrampModifier( FlexTrampModelLocator.getInstance().parser, 
+						FlexTrampModelLocator.getInstance().historyManager );
+			}
+			
+			public function addVariable ( varName : String, value : Object ) : void
+			{
+				modifier.parser.addVariable( varName, value );
+			}
+
+			private function getAttributesForVar( event : ListEvent ) : void
+			{
+				 var s : String = List(event.target).selectedItem as String;
+			}
+		
+		]]>
+	</mx:Script>
+	
+	<panels:VariablePanel id="variablePanel" width="100%" height="100%" />
+	<components:CodeConsole id="codeConsole" width="100%" height="100%"/>
+
+</mx:Canvas>

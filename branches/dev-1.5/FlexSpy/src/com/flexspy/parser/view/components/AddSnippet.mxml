@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow 
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	xmlns:components="com.flexspy.parser.view.components.*" 
+	width="400" 
+	height="300"
+	creationComplete="handleCreationComplete()"
+	showCloseButton="true"
+	title="Add Snippet"
+	close="closeView()">
+	
+	<mx:Script>
+		<![CDATA[
+			import com.flexspy.parser.model.domain.SnippetCategory;
+			import com.flexspy.parser.model.presentation.components.AddSnippetModifier;
+			import com.flexspy.parser.model.FlexTrampModelLocator;
+		
+			import mx.events.ListEvent;
+			import mx.events.TreeEvent;
+			import mx.managers.PopUpManager;
+			import mx.validators.Validator;
+		
+			[Bindable]
+			private var model : AddSnippetModifier;
+			
+			private var _code : String;
+			
+			public function set code( value : String ) : void
+			{
+				if( model )
+				{
+					model.code = value;
+				}
+				else
+				{
+					_code = value;		
+				}					
+			}
+			
+			private function handleCreationComplete() : void
+			{
+				createModels();
+				snippetName.setFocus();	
+			}
+			
+			private function createModels() : void
+			{
+				var flexTrampModelLocator: FlexTrampModelLocator = FlexTrampModelLocator.getInstance();
+				
+				model = new AddSnippetModifier( flexTrampModelLocator.snippets );
+				model.code = _code;
+			}
+			
+			//Snippet view base class?
+			private function closeView() : void
+			{
+				PopUpManager.removePopUp( this );	
+			}
+			
+			private function handleAddSnippet() : void
+			{
+				var validators : Array = [ 	nameValidator, 
+											descriptionValidator, 
+											codeValidator, 
+											categoryValidator ];
+											 
+				if( Validator.validateAll( validators ).length == 0 )
+				{
+					model.add();
+					closeView();
+				}
+			}
+			
+		]]>
+	</mx:Script>
+	
+	<mx:StringValidator id="nameValidator"
+		required="true"
+		source="{ snippetName }"
+		property="text" />
+		
+	<mx:StringValidator id="descriptionValidator"
+		required="true"
+		source="{ snippetDescription }"
+		property="text" />
+		
+	<mx:StringValidator id="codeValidator"
+		required="true"
+		source="{ snippetCode }"
+		property="text" />
+	
+	<mx:Validator id="categoryValidator"
+		required="true"
+		source="{ snippetsCategoryTree }"
+		property="selectedItem"
+		triggerEvent="{ ListEvent.CHANGE }" />
+
+	<mx:Form width="100%">
+		
+		<mx:FormItem 
+			label="Name" 
+			required="true"
+			width="100%">
+			<mx:TextInput id="snippetName"
+				text="{ model.name }"
+				change=" model.name = snippetName.text "
+				width="100%" />		
+		</mx:FormItem>
+		
+		<mx:FormItem 
+			label="Description" 
+			required="true"
+			width="100%">
+			<mx:TextInput id="snippetDescription"
+				text="{ model.description }"
+				change=" model.description = snippetDescription.text "
+				width="100%" />		
+		</mx:FormItem>
+		
+		<mx:FormItem
+			label="Code"
+			required="true"
+			width="100%">
+			<mx:TextArea id="snippetCode"
+				text="{ model.code }"
+				change=" model.code = snippetCode.text "
+				width="100%"/>
+		</mx:FormItem>
+		
+		<mx:FormItem
+			label="Category"
+			required="true"
+			width="100%">
+			
+			<!-- TODO: Refactor to single snippet tree, with option to turn categories only / on off) -->
+			<components:SnippetsCategoryTree id="snippetsCategoryTree"
+				selectedIndex="1"
+				doubleClickEnabled="true"
+				dragEnabled="true"
+				width="100%"
+				rowCount="3"
+				change="model.selectedCategory = SnippetCategory( snippetsCategoryTree.selectedItem )" />
+	
+		</mx:FormItem>
+		
+		<mx:FormItem width="100%">
+			<mx:Button 
+				label="Add"
+				click="handleAddSnippet()" />
+		</mx:FormItem>	
+	
+	</mx:Form>
+		
+</mx:TitleWindow>
